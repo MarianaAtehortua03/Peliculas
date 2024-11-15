@@ -15,14 +15,12 @@ class RecomendadorPeliculas:
         r = requests.get(url)
         with open('ml-latest-small.zip', 'wb') as f:
             f.write(r.content)
-        
+
         with zipfile.ZipFile('ml-latest-small.zip', 'r') as zip_ref:
             zip_ref.extractall('ml-latest-small')
-        
+
         # Leer el archivo 'movies.csv'
         movielens = pd.read_csv('ml-latest-small/ml-latest-small/movies.csv', usecols=['title', 'genres'])
-        
-        # Crear descripción simple basada en géneros para cada película
         movielens['description'] = movielens['genres'].apply(lambda x: ' '.join(x.split('|')))
         self.data = movielens
 
@@ -37,15 +35,20 @@ class RecomendadorPeliculas:
             print(f"Películas encontradas para el género {genero}: {len(peliculas_genero)}")
             idxs = peliculas_genero.index
             simil_scores = []
+
             for idx in idxs:
                 simil_scores += list(enumerate(self.similitudes[idx]))
+
             simil_scores = sorted(simil_scores, key=lambda x: x[1], reverse=True)
             recomendadas = []
+
             for i in simil_scores:
                 if len(recomendadas) >= 3:  # Generar hasta 3 recomendaciones
                     break
                 if self.data['title'].iloc[i[0]] not in peliculas_genero['title'].values:
                     recomendadas.append(self.data['title'].iloc[i[0]])
+                    self.lista_peliculas.insertar(self.data['title'].iloc[i[0]])  # Agregar a la lista enlazada
+
             print(f"Recomendaciones generadas: {len(recomendadas)}")
             return recomendadas
         except Exception as e:
@@ -82,9 +85,9 @@ def main():
                 break
             elif 1 <= opcion_usuario <= len(generos):
                 genero_usuario = generos[opcion_usuario - 1]
-                print(f"Genero seleccionado: {genero_usuario}")
+                print(f"Género seleccionado: {genero_usuario}")
 
-                # Recomendaciones basadas en el género seleccionado
+                # Generar y mostrar recomendaciones
                 recomendaciones = recomendador.recomendar(genero_usuario)
                 print(f"\nRecomendaciones para el género '{genero_usuario}':")
                 if not recomendaciones:
@@ -92,6 +95,10 @@ def main():
                 else:
                     for pelicula in recomendaciones:
                         print(pelicula)
+
+                # Mostrar recomendaciones almacenadas en la lista enlazada
+                print("\nPelículas recomendadas almacenadas:")
+                recomendador.lista_peliculas.mostrar_peliculas()
             else:
                 print("Número de opción fuera de rango. Por favor, intente nuevamente.")
         except ValueError:
@@ -99,6 +106,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
